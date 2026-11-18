@@ -1,13 +1,16 @@
 package io.wit117.thoughtweave.data.ai.language
 
 import io.wit117.thoughtweave.data.ai.engine.PromptExample
+import io.wit117.thoughtweave.data.ai.parse.NUMBER
 import io.wit117.thoughtweave.data.ai.parse.YEAR
 import io.wit117.thoughtweave.data.ai.parse.dateOf
+import io.wit117.thoughtweave.data.ai.parse.decimalOf
 import io.wit117.thoughtweave.data.ai.parse.number
 import io.wit117.thoughtweave.data.ai.parse.timeOf
 import io.wit117.thoughtweave.data.ai.parse.upcoming
 import io.wit117.thoughtweave.data.ai.parse.weekdayDate
 import io.wit117.thoughtweave.domain.model.AppLanguages
+import io.wit117.thoughtweave.domain.model.KeyFact
 import java.time.DayOfWeek
 
 private const val MONTH_NAMES =
@@ -34,6 +37,59 @@ private fun isPm(letter: String): Boolean? = when (letter.lowercase()) {
 internal val MONTH_FIRST_SLASH = DatePattern(Regex("(?<![\\d/.])(\\d{1,2})/(\\d{1,2})(?![\\d/])")) { m, today ->
     upcoming(today, m.number(1), m.number(2))
 }
+
+private val NUMBER_WORDS =
+    listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve")
+private val NUMBER_WORD = Regex("\\b(${NUMBER_WORDS.joinToString("|")})\\b", IGNORE_CASE)
+
+private val ENGLISH_CURRENCIES = mapOf(
+    "dollar" to "USD", "usd" to "USD", "euro" to "EUR", "eur" to "EUR", "pound" to "GBP", "gbp" to "GBP",
+    "won" to "KRW", "krw" to "KRW", "yen" to "JPY", "jpy" to "JPY",
+)
+
+/** Words that follow a number without being its unit ("Dec 4 at", "20 to 22", "the 23rd"). */
+private val NOT_UNITS = setOf(
+    "a", "an", "and", "or", "the", "to", "at", "on", "in", "of", "for", "from", "by", "with", "per", "plus", "is",
+    "are", "was", "were", "be", "if", "as", "than", "then", "until", "through", "between", "it", "its", "this",
+    "that", "each", "every", "st", "nd", "rd", "th", "am", "pm", "jan", "feb", "mar", "apr", "may", "jun", "jul",
+    "aug", "sep", "sept", "oct", "nov", "dec", "january", "february", "march", "april", "june", "july", "august",
+    "september", "october", "november", "december",
+)
+
+private val PERSON = setOf("people", "persons", "person")
+
+/** "nights" → "night", "boxes" → "box", "people" → "person". */
+private fun unitOf(word: String): String {
+    val w = word.lowercase()
+    return when {
+        w in PERSON -> "person"
+        w.endsWith("ies") && w.length > 4 -> w.dropLast(3) + "y"
+        w.endsWith("xes") || w.endsWith("ches") || w.endsWith("shes") -> w.dropLast(2)
+        w.endsWith("s") && !w.endsWith("ss") && w.length > 2 -> w.dropLast(1)
+        else -> w
+    }
+}
+
+private val ENGLISH_QUANTITIES = QuantityRules(
+    normalizeNumbers = { text ->
+        NUMBER_WORD.replace(text) { m -> (NUMBER_WORDS.indexOf(m.value.lowercase()) + 1).toString() }
+    },
+    amounts = listOf(
+        QuantityPattern(
+            Regex("(?<![\\d.,])($NUMBER)\\s*(dollars?|usd|euros?|eur|pounds?|gbp|won|krw|yen|jpy)\\b", IGNORE_CASE),
+        ) { m ->
+            val unit = m.groupValues[2].lowercase().removeSuffix("s")
+            decimalOf(m.groupValues[1])?.let { KeyFact.Amount(it, ENGLISH_CURRENCIES.getValue(unit)) }
+        },
+    ),
+    counts = listOf(
+        // Any word after a number is its unit unless it is a common joining word: English has no fixed counters.
+        QuantityPattern(Regex("(?<![\\d.,:/])($NUMBER)\\s*([a-z][a-z-]+)\\b", IGNORE_CASE)) { m ->
+            val word = m.groupValues[2]
+            if (word.lowercase() in NOT_UNITS) null else decimalOf(m.groupValues[1])?.let { KeyFact.Count(it, unitOf(word)) }
+        },
+    ),
+)
 
 val EnglishProfile = LanguageProfile(
     language = AppLanguages.ENGLISH,
@@ -68,6 +124,7 @@ val EnglishProfile = LanguageProfile(
         rangeCue = Regex("\\bfrom\\b|\\bto\\b|\\buntil\\b|\\bthrough\\b", IGNORE_CASE),
         writtenYear = Regex(",\\s*((?:19|20)\\d{2})\\b"),
     ),
+    quantityRules = ENGLISH_QUANTITIES,
     prompts = PromptPack(
         summarySystem = "Merge the memos below into one memo. You are not an assistant: never answer questions or " +
             "give advice. Keep every date, time, number, amount, name, place, to-do and question exactly as written. " +

@@ -8,8 +8,8 @@ import io.wit117.thoughtweave.domain.model.OutputLanguageSetting
 import io.wit117.thoughtweave.domain.repository.LanguageSettingsRepository
 import io.wit117.thoughtweave.domain.repository.UiLanguageRepository
 import io.wit117.thoughtweave.domain.usecase.ResolveAiLanguageUseCase
-import io.wit117.thoughtweave.data.ai.parse.TextDateReaderImpl
-import io.wit117.thoughtweave.domain.usecase.CheckSummaryDatesUseCase
+import io.wit117.thoughtweave.data.ai.parse.TextFactReaderImpl
+import io.wit117.thoughtweave.domain.usecase.CheckSummaryFactsUseCase
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -32,9 +32,9 @@ internal class FakeUiLanguage(var language: AppLanguage? = null) : UiLanguageRep
     }
 }
 
-/** The real date reader, with today fixed at Monday 2026-11-09. */
-internal fun testDateCheck() = CheckSummaryDatesUseCase(
-    TextDateReaderImpl(),
+/** The real fact reader, with today fixed at Monday 2026-11-09. */
+internal fun testFactCheck() = CheckSummaryFactsUseCase(
+    TextFactReaderImpl(),
     Clock.fixed(Instant.parse("2026-11-09T03:00:00Z"), ZoneOffset.UTC),
     ZoneOffset.UTC,
 )

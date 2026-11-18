@@ -82,7 +82,7 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
 - A synthesized memo is the AI's merged text, then "원문 항목" / "Original items": every line and sentence of the
   source memos in their original wording, de-duplicated by code (`factList`) (user decision, 2026-11-11). The 1B
   model drops or rewords facts and cannot tell which lines describe the same thing, so the list keeps them all.
-  The S02-C date check reads only the AI part (`MemoSynthesisRepository.aiPart`), since the list repeats every date.
+  The S02-C fact check reads only the AI part (`MemoSynthesisRepository.aiPart`), since the list repeats every date.
 - S03 selection: cleared after a successful save; kept on cancel, back or failure.
 - S01 and S03 order: pinned first, then most recently updated. No sort menu.
 - Schedule: title and deadline (`end_at`) required; `start_at` optional and ≤ deadline when set;
@@ -103,9 +103,9 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
   question; never answer") and one worked example whose memo asks a question. Measured on the real model
   (2026-11-11, 3 Korean + 1 English three-memo sets, facts checked automatically): "merge" kept 31/35 facts,
   the earlier "condense" 25/35, one-fact-per-line bullets 28/35, and merge with a dateless example 28/35.
-  All variants still occasionally rewrite a date ("12.2" → "12일 후"), so `CheckSummaryDatesUseCase` compares the
-  dates in the sources and the summary (as calendar days, with the schedule date reader) and S02-C warns about
-  missing or added dates, re-checking as the user edits. `withoutInventedYears` removes years absent from the sources,
+  All variants still occasionally rewrite a date ("12.2" → "12일 후"), so `CheckSummaryFactsUseCase` compares the
+  dates, times, amounts, counts and long numbers in the sources and the summary (by value, with `readKeyFacts`) and
+  S02-C warns about missing or added ones, quoting their wording and re-checking as the user edits. `withoutInventedYears` removes years absent from the sources,
   because prompting did not stop the model adding them.
 - Language profiles (`data/ai/language`): each language's date rules, prompts and example live in one
   `LanguageProfile`, registered in `LanguageProfiles`. Written-out dates of every language are always read;
@@ -140,6 +140,14 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
   items, including a whole correcting memo (en-6, the rent rise). Not scored: wrong attributions ("카드값 147만
   3천원" became "예산"). Compare changes with `score.py --compare`; judge them by sets better or worse, since runs are
   deterministic.
+- Key facts (`readKeyFacts`, `keyFactDiff` in `data/ai/parse/KeyFactReader.kt`, 2026-11-18): dates, times, amounts,
+  counts and long numbers read by code and compared by value ("15만원" = "150,000원", "6 pm" = "18:00" = "저녁 6시",
+  "three nights" = "3 nights"). Times compare on the 12-hour dial because memos omit 오전/오후. Each input language
+  needs `quantityRules` (`LanguageContractTest`, `QUANTITY_SAMPLES`). On the 24-set baseline it flags 14 of the 21
+  lost facts; the other 7 are not numbers. Of its other warnings, 4 are real changes the benchmark does not list and
+  1 is a time a later memo replaced (ko-8, "7시" → "8시"), which rules cannot tell from a drop (accepted, user
+  decision 2026-11-18: the warning says "missing or changed"). S02-C shows it since 2026-11-18. The same work fixed the shared date reader: "January 20-22" / "12월 1일~7일" now read the end date (schedule
+  extraction gets the range), and "2시간" is no longer a time.
 - Gemma 3 1B answered Korean memos in English when told to use "the same language", so Korean memos get a Korean
   prompt. Its context is 4,096 tokens; over-long input fails with a "too long" error, reported to the user.
 

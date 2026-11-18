@@ -33,6 +33,26 @@ private val SHARED_RANGE_CUE = Regex("~|–|-")
 /** Only commas, spaces or brackets between a weekday and its date, as in "목요일, 12월 3일". */
 private val ATTACHED = Regex("[\\s,()]*")
 
+/**
+ * The end of a range that writes the month once: "January 20-22", "Jan 3 to 5", "12월 1일~7일". The day must
+ * follow the date directly and not be a count ("Dec 4 - 3 people", "12월 5일 - 3명").
+ */
+private val RANGE_END = Regex(
+    "\\s*(?:~|–|-|\\bto\\b|\\bthrough\\b)\\s*(\\d{1,2})" +
+        "(?:\\s*일|(?:st|nd|rd|th)?(?![\\d/:])(?![.,]\\d)(?!\\s*(?:[가-힣]|%|(?:people|persons?|nights?|days?|hours?|am|pm)\\b)))",
+    RegexOption.IGNORE_CASE,
+)
+
+private fun rangeEnds(text: String, explicit: List<Mention<LocalDate>>): List<Mention<LocalDate>> =
+    explicit.mapNotNull { start ->
+        val m = RANGE_END.find(text, start.range.last + 1)?.takeIf { it.range.first == start.range.last + 1 }
+            ?: return@mapNotNull null
+        val day = m.groupValues[1].toInt()
+        if (day <= start.value.dayOfMonth) return@mapNotNull null
+        // The mention is the day alone, so the "-" or "to" before it reads as the range cue.
+        safeDate(start.value.year, start.value.monthValue, day)?.let { Mention(m.groups[1]!!.range, it) }
+    }
+
 private fun profilesWithRules() = LanguageProfiles.all.mapNotNull { it.dateRules }
 
 private fun dateMentions(text: String, today: LocalDate, input: LanguageProfile): List<Mention<LocalDate>> {
@@ -45,7 +65,8 @@ private fun dateMentions(text: String, today: LocalDate, input: LanguageProfile)
     val rules = profilesWithRules()
     val numeric = (input.dateRules ?: EnglishProfile.dateRules)?.numericDates.orEmpty()
     // Most specific first, so "2026/12/3" is not also read as 12/3.
-    val explicit = withoutOverlaps(find(listOf(FULL_DATE) + rules.flatMap { it.dates } + numeric))
+    val written = withoutOverlaps(find(listOf(FULL_DATE) + rules.flatMap { it.dates } + numeric))
+    val explicit = withoutOverlaps(written + rangeEnds(text, written))
     val weekdays = find(rules.flatMap { it.weekdays })
     // A weekday written next to a date describes that date, and the explicit date wins even if they disagree.
     val standaloneWeekdays = weekdays.filter { weekday -> explicit.none { isAttached(text, weekday, it) } }
@@ -97,6 +118,13 @@ fun readScheduleDates(text: String, today: LocalDate, input: LanguageProfile = E
         startTime = if (hasStartTime) times[0].value else null,
     )
 }
+
+/** Where each date is written in [text], for reading other facts around them. */
+internal fun dateMentionsIn(text: String, today: LocalDate, input: LanguageProfile): List<Mention<LocalDate>> =
+    dateMentions(text, today, input)
+
+/** Where each time is written in [text], in every language's forms. */
+internal fun timeMentionsIn(text: String): List<Mention<LocalTime>> = timeMentions(text)
 
 /** Every date written in [text], including weekdays and relative days resolved against [today]. */
 fun readAllDates(text: String, today: LocalDate, input: LanguageProfile = EnglishProfile): Set<LocalDate> =

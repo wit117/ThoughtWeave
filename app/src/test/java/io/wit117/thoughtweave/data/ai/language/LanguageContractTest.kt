@@ -1,5 +1,6 @@
 package io.wit117.thoughtweave.data.ai.language
 
+import io.wit117.thoughtweave.data.ai.parse.readKeyFacts
 import io.wit117.thoughtweave.data.ai.parse.readScheduleDates
 import io.wit117.thoughtweave.domain.model.AppLanguages
 import java.io.File
@@ -78,6 +79,19 @@ class LanguageContractTest {
             assertTrue("$tag: add at least 5 cases to DATE_SAMPLES", samples.size >= 5)
             for ((text, expected) in samples) {
                 assertEquals("$tag: \"$text\"", expected, readScheduleDates(text, SAMPLE_TODAY, profile))
+            }
+        }
+    }
+
+    @Test
+    fun everyInputLanguageReadsItsQuantitySamples() {
+        for (profile in LanguageProfiles.all.filter { it.dateRules != null }) {
+            val tag = profile.language.tag
+            assertTrue("$tag: an input language needs quantityRules", profile.quantityRules != null)
+            val samples = QUANTITY_SAMPLES[tag].orEmpty()
+            assertTrue("$tag: add at least 5 cases to QUANTITY_SAMPLES", samples.size >= 5)
+            for ((text, expected) in samples) {
+                assertEquals("$tag: \"$text\"", expected, readKeyFacts(text, SAMPLE_TODAY, profile).map { it.fact }.toSet())
             }
         }
     }

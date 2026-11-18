@@ -49,12 +49,12 @@ class SynthesisFlowTest {
 
     private fun clickable(@StringRes id: Int) = rule.onNode(hasText(str(id)) and hasClickAction())
 
-    private fun createMemo(): String {
+    private fun createMemo(content: String? = null): String {
         val title = "memo-${UUID.randomUUID()}"
         clickable(R.string.fab_new_memo).performClick()
         waitFor(hasSetTextAction())
         rule.onAllNodes(hasSetTextAction())[0].performTextInput(title)
-        rule.onAllNodes(hasSetTextAction())[1].performTextInput("content of $title")
+        rule.onAllNodes(hasSetTextAction())[1].performTextInput(content ?: "content of $title")
         clickable(R.string.action_save).performClick()
         // The editor's title field also holds this text, so exclude it to wait for the list.
         waitFor(hasText(title) and !hasSetTextAction())
@@ -112,6 +112,24 @@ class SynthesisFlowTest {
         waitFor(hasText(first))
         rule.onNode(hasText(first)).assertIsSelected()
         clickable(R.string.fab_ai_synthesize).assertIsEnabled()
+    }
+
+    /** The fake summary keeps none of the memos' facts, so S02-C lists them as missing. */
+    @Test
+    fun summaryMissingAmountAndTimeIsFlagged() {
+        val first = createMemo("예산은 1인당 15만원")
+        val second = createMemo("오후 3시 회의")
+        clickable(R.string.nav_ai_merge).performClick()
+        waitFor(hasText(first))
+        rule.onNode(hasText(first)).performClick()
+        rule.onNode(hasText(second)).performClick()
+        clickable(R.string.fab_ai_synthesize).performClick()
+        waitForSummary()
+
+        // The notice, not the content field, whose original-items list also holds these facts.
+        val prefix = str(R.string.summary_facts_missing).substringBefore("%1\$s")
+        val notice = hasText(prefix, substring = true) and !hasSetTextAction()
+        waitFor(notice and hasText("15만원", substring = true) and hasText("오후 3시", substring = true))
     }
 
     @Test

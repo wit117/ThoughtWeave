@@ -6,12 +6,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wit117.thoughtweave.R
 import io.wit117.thoughtweave.core.ui.component.ConfirmDialog
-import io.wit117.thoughtweave.core.ui.component.formatLocalDate
 import io.wit117.thoughtweave.feature.memo.editor.MemoEditorContent
 import kotlinx.coroutines.launch
 
@@ -26,7 +24,6 @@ fun SynthesisResultScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.memo_save_failed)
-    val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -56,11 +53,12 @@ fun SynthesisResultScreen(
             state.untranslated?.let { (writtenIn, requested) ->
                 stringResource(R.string.ai_translation_unavailable, requested.nativeName, writtenIn.nativeName)
             },
-            state.dateCheck?.missing?.takeIf { it.isNotEmpty() }?.let { dates ->
-                stringResource(R.string.summary_dates_missing, dates.joinToString { formatLocalDate(context, it) })
+            // Quoted as written: the source's wording for what is missing, the summary's for what was added.
+            state.factCheck?.missing?.takeIf { it.isNotEmpty() }?.let { facts ->
+                stringResource(R.string.summary_facts_missing, facts.joinToString { it.wording })
             },
-            state.dateCheck?.added?.takeIf { it.isNotEmpty() }?.let { dates ->
-                stringResource(R.string.summary_dates_added, dates.joinToString { formatLocalDate(context, it) })
+            state.factCheck?.added?.takeIf { it.isNotEmpty() }?.let { facts ->
+                stringResource(R.string.summary_facts_added, facts.joinToString { it.wording })
             },
         ),
         showProgress = state.phase == SynthesisPhase.GENERATING,

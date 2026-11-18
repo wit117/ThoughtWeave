@@ -131,8 +131,8 @@
     <string name="settings_ai_output_language">AI 출력 언어</string>
     <string name="language_auto">자동 감지</string>
     <string name="language_same_as_input">입력 언어와 같게</string>
-    <string name="summary_dates_missing">요약에서 빠지거나 바뀐 날짜: %1$s. 저장하기 전에 날짜를 확인하세요.</string>
-    <string name="summary_dates_added">원본 메모에 없는 날짜: %1$s. AI가 날짜를 바꿨을 수 있습니다.</string>
+    <string name="summary_facts_missing">요약에서 빠지거나 바뀐 내용: %1$s. 저장하기 전에 확인하세요.</string>
+    <string name="summary_facts_added">원본 메모에 없는 내용: %1$s. AI가 바꿨을 수 있습니다.</string>
     <string name="ai_translation_unavailable">%2$s 메모를 %1$s로 작성하는 기능은 아직 지원되지 않아 이 요약은 %2$s로 작성했습니다.</string>
 
     <string name="title_licenses">라이선스 및 고지</string>

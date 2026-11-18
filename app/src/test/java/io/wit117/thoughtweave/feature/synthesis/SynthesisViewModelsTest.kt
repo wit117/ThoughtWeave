@@ -5,9 +5,10 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import io.wit117.thoughtweave.domain.model.AgreementStatus
 import io.wit117.thoughtweave.domain.model.AiLanguagePlan
-import io.wit117.thoughtweave.testDateCheck
+import io.wit117.thoughtweave.testFactCheck
 import io.wit117.thoughtweave.testLanguageResolver
 import io.wit117.thoughtweave.domain.model.AiModelStatus
+import io.wit117.thoughtweave.domain.model.KeyFact
 import io.wit117.thoughtweave.domain.model.Memo
 import io.wit117.thoughtweave.domain.repository.AgreementRepository
 import io.wit117.thoughtweave.domain.repository.AiModelRepository
@@ -92,7 +93,7 @@ class SynthesisViewModelsTest {
     private fun SynthesisViewModel.loaded() = uiState.value as SynthesisUiState.Loaded
 
     private fun result(ids: List<Long>, synthesis: MemoSynthesisRepository = FakeSynthesis()) =
-        SynthesisResultViewModel(ids, memos, synthesis, testLanguageResolver(), testDateCheck(), handle)
+        SynthesisResultViewModel(ids, memos, synthesis, testLanguageResolver(), testFactCheck(), handle)
 
     @Test
     fun needsTwoSelectedMemosAndAi() = runTest(dispatcher) {
@@ -269,18 +270,18 @@ class SynthesisViewModelsTest {
 
     @Test
     fun changedDateIsFlaggedAndClearsOnceFixed() {
-        // The reported case: "12.2" became "12일 후" in the summary. Today is 2026-11-09 (testDateCheck).
+        // The reported case: "12.2" became "12일 후" in the summary. Today is 2026-11-09 (testFactCheck).
         val a = memos.add("할 일", "12.2까지 기획서 제출")
         val b = memos.add("예산", "총 예산 1200만원")
         val viewModel = result(listOf(a.id, b.id), FakeSynthesis(result = { flowOf("기획서는 12일 후 제출, 예산 1200만원") }))
 
-        val check = viewModel.uiState.value.dateCheck
-        assertEquals(listOf(java.time.LocalDate.of(2026, 12, 2)), check?.missing)
+        val check = viewModel.uiState.value.factCheck
+        assertEquals(listOf("12.2"), check?.missing?.map { it.wording })
         assertTrue(check!!.added.isEmpty())
 
         viewModel.onContentChange("기획서는 12월 2일까지 제출, 예산 1200만원")
 
-        assertEquals(null, viewModel.uiState.value.dateCheck)
+        assertEquals(null, viewModel.uiState.value.factCheck)
     }
 
     @Test
@@ -290,9 +291,24 @@ class SynthesisViewModelsTest {
         val b = memos.add("메모", "장소는 3층")
         val viewModel = result(listOf(a.id, b.id), FakeSynthesis(result = { flowOf("다음 주 수요일 오후 2시 3층 회의") }))
 
-        val check = viewModel.uiState.value.dateCheck!!
-        assertEquals(listOf(java.time.LocalDate.of(2026, 11, 25)), check.missing)
-        assertEquals(listOf(java.time.LocalDate.of(2026, 11, 18)), check.added)
+        val check = viewModel.uiState.value.factCheck!!
+        assertEquals(listOf(KeyFact.Date(java.time.LocalDate.of(2026, 11, 25))), check.missing.map { it.fact })
+        assertEquals(listOf(KeyFact.Date(java.time.LocalDate.of(2026, 11, 18))), check.added.map { it.fact })
+        assertEquals(listOf("다음 주 수요일"), check.added.map { it.wording })
+    }
+
+    @Test
+    fun droppedTimeAndAmountAreFlagged() {
+        // Benchmark ko-4 and ko-1: the time and the budget were left out of the summary.
+        val a = memos.add("치과", "12월 9일(수) 오후 3시 치과 예약")
+        val b = memos.add("예산", "예산은 1인당 15만원")
+        val viewModel = result(listOf(a.id, b.id), FakeSynthesis(result = { flowOf("12월 9일(수) 치과 예약, 1인당 예산") }))
+
+        assertEquals(listOf("오후 3시", "15만원"), viewModel.uiState.value.factCheck?.missing?.map { it.wording })
+
+        viewModel.onContentChange("12월 9일(수) 15:00 치과 예약, 1인당 예산 150,000원")
+
+        assertEquals(null, viewModel.uiState.value.factCheck)
     }
 
     @Test
@@ -301,6 +317,6 @@ class SynthesisViewModelsTest {
         val b = memos.add("장소", "본관")
         val viewModel = result(listOf(a.id, b.id), FakeSynthesis(result = { flowOf("12월 2일 본관에서 발표") }))
 
-        assertEquals(null, viewModel.uiState.value.dateCheck)
+        assertEquals(null, viewModel.uiState.value.factCheck)
     }
 }

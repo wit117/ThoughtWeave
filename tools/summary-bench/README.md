@@ -10,6 +10,10 @@ rejected 2026-11-17 (CLAUDE.md, Inference): on the Korean sets it answered in En
   totals per language; `--compare old.json new.json` lists per-set differences.
 - `test_score.py`: scorer tests, standard library only.
 - `run_200m.py`: configuration B (Summarization 200M alone, both modes) via `mediapipe`.
+- `keyfacts_report.py`: how many of a result's lost facts the app's key-fact check (`readKeyFacts`,
+  `keyFactDiff`) would flag, and which warnings match no lost fact. Run
+  `gradlew :app:testDebugUnitTest --tests "*KeyFactBenchExport"` first; it writes the app's readings to
+  `app/build/summary-bench/keyfacts.tsv`.
 
 ## Setup (Windows)
 The MSYS2 `python` on PATH cannot load Windows wheels; use the python.org build (uninstalled after the
@@ -70,5 +74,5 @@ per set are allowed; totals average them, so run-to-run noise is visible.
 - Dates are read as month-day from "12월 5일", "12.5", "12/5", "Jan 9", "9 January", and the end of
   "January 20-22". Relative dates
   ("12일 후") are not read, so a date rewritten that way counts as missing. This approximates the app's
-  `TextDateReader`, which is Kotlin; "3.14" reads as March 14 in both.
+  `readKeyFacts` (`TextFactReader`), which is Kotlin; "3.14" reads as March 14 in both.
 - Language: Korean sets need at least 60% Hangul among letters; English sets at most 5%.

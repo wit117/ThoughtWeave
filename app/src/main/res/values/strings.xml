@@ -145,8 +145,8 @@
     <string name="settings_ai_output_language">AI output language</string>
     <string name="language_auto">Detect automatically</string>
     <string name="language_same_as_input">Same as input</string>
-    <string name="summary_dates_missing">Missing or changed in this summary: %1$s. Check the dates before saving.</string>
-    <string name="summary_dates_added">Not in the source memos: %1$s. The AI may have changed a date.</string>
+    <string name="summary_facts_missing">Missing or changed in this summary: %1$s. Check them before saving.</string>
+    <string name="summary_facts_added">Not in the source memos: %1$s. The AI may have changed them.</string>
     <string name="ai_translation_unavailable">Writing in %1$s from %2$s memos is not supported yet, so this summary is in %2$s.</string>
 
     <!-- S05 licenses -->

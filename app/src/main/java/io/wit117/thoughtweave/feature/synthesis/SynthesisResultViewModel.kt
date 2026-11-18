@@ -10,9 +10,9 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.wit117.thoughtweave.domain.model.AppLanguage
 import io.wit117.thoughtweave.domain.model.Memo
-import io.wit117.thoughtweave.domain.usecase.CheckSummaryDatesUseCase
+import io.wit117.thoughtweave.domain.usecase.CheckSummaryFactsUseCase
 import io.wit117.thoughtweave.domain.usecase.ResolveAiLanguageUseCase
-import io.wit117.thoughtweave.domain.usecase.SummaryDateCheck
+import io.wit117.thoughtweave.domain.usecase.SummaryFactCheck
 import io.wit117.thoughtweave.domain.repository.MemoRepository
 import io.wit117.thoughtweave.domain.repository.MemoSynthesisException
 import io.wit117.thoughtweave.domain.repository.MemoSynthesisRepository
@@ -36,8 +36,8 @@ data class SynthesisResultUiState(
     val isInputTooLong: Boolean = false,
     /** Set when the chosen output language could not be used: (written in, requested). */
     val untranslated: Pair<AppLanguage, AppLanguage>? = null,
-    /** Dates that differ between the sources and the summary; updated as the user edits. */
-    val dateCheck: SummaryDateCheck? = null,
+    /** Dates, times, amounts and counts that differ between the sources and the summary; updated as the user edits. */
+    val factCheck: SummaryFactCheck? = null,
 ) {
     /** A finished summary exists only in memory until saved, so leaving must be confirmed. */
     val isDirty: Boolean get() = phase == SynthesisPhase.READY
@@ -56,7 +56,7 @@ class SynthesisResultViewModel @AssistedInject constructor(
     private val memoRepository: MemoRepository,
     private val synthesisRepository: MemoSynthesisRepository,
     private val resolveLanguage: ResolveAiLanguageUseCase,
-    private val checkDates: CheckSummaryDatesUseCase,
+    private val checkFacts: CheckSummaryFactsUseCase,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -104,7 +104,7 @@ class SynthesisResultViewModel @AssistedInject constructor(
                 false
             }
             if (succeeded) {
-                _uiState.update { it.copy(phase = SynthesisPhase.READY, dateCheck = dateCheckFor(it.draft)) }
+                _uiState.update { it.copy(phase = SynthesisPhase.READY, factCheck = factCheckFor(it.draft)) }
                 draftStore.persist(_uiState.value.draft)
             } else {
                 _uiState.value = SynthesisResultUiState(SynthesisPhase.FAILED, isInputTooLong = isTooLong)
@@ -116,11 +116,11 @@ class SynthesisResultViewModel @AssistedInject constructor(
         memoRepository.getMemo(id) ?: throw MemoSynthesisException("Source memo $id no longer exists")
     }
 
-    private fun dateCheckFor(draft: MemoDraft): SummaryDateCheck? {
+    private fun factCheckFor(draft: MemoDraft): SummaryFactCheck? {
         val language = summaryLanguage ?: return null
-        // Only what the AI wrote: the original-items list repeats every source date.
+        // Only what the AI wrote: the original-items list repeats every source fact.
         val aiText = synthesisRepository.aiPart(draft.content, language)
-        return checkDates(sources, draft.title + "\n" + aiText, language).takeIf { it.hasProblems }
+        return checkFacts(sources, draft.title + "\n" + aiText, language).takeIf { it.hasProblems }
     }
 
     private suspend fun streamSummary(sources: List<Memo>) {
@@ -143,7 +143,7 @@ class SynthesisResultViewModel @AssistedInject constructor(
         if (_uiState.value.phase != SynthesisPhase.READY) return
         _uiState.update {
             val draft = transform(it.draft)
-            it.copy(draft = draft, dateCheck = dateCheckFor(draft))
+            it.copy(draft = draft, factCheck = factCheckFor(draft))
         }
         draftStore.persist(_uiState.value.draft)
     }

@@ -42,9 +42,15 @@ In the examples below the new language is Japanese, tag `ja`. Use the BCP 47 lan
      attached to a date (`writtenYear`, used to remove years the model invents).
    - Leave `prompts = null` for now.
    - Register it in `LanguageProfiles.all`.
-5. **Add date samples.** Add at least five cases to `DATE_SAMPLES` in `test/.../data/ai/language/DateSamples.kt`:
-   a written-out date, a relative day, a weekday, a time and a range. For bugs or tricky forms, add a dedicated
-   test class too, like `CommaDateFormatsTest`.
+   - `quantityRules`: amounts and counts, used to check that a summary keeps them (see `KeyFactReader.kt`).
+     `normalizeNumbers` turns number words into digits only where they are numbers; `amounts` are numbers with
+     a currency word (symbols such as "$" are shared); `counts` are numbers with a unit or counter. Percentages,
+     dates, times and long numbers such as phone numbers are shared.
+5. **Add date and quantity samples.** Add at least five cases to `DATE_SAMPLES` in
+   `test/.../data/ai/language/DateSamples.kt`: a written-out date, a relative day, a weekday, a time and a range.
+   Add at least five to `QUANTITY_SAMPLES` in `QuantitySamples.kt`: an amount with a currency word, a large amount,
+   a count with a unit, a count written as a word, and a percentage. For bugs or tricky forms, add a dedicated
+   test class too, like `CommaDateFormatsTest` or `KeyFactReaderTest`.
 
 ## AI output language
 
