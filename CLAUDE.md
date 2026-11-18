@@ -2,7 +2,7 @@
 
 Android memo + schedule app with on-device AI (Gemma 3 1B via LiteRT-LM) for memo summarization
 and schedule extraction. Full architecture: https://claude.ai/artifact/ERQc39x57sBJ32nqSuTDxG
-(revision 10, 2026-11-18). This file is the in-repo source of truth for conventions and decisions.
+(revision 11, 2026-11-18). This file is the in-repo source of truth for conventions and decisions.
 Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
 
 ## Working rules
