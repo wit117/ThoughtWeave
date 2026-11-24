@@ -6,14 +6,10 @@ Open tasks. Remove an item (or move it to CLAUDE.md as a decision) once it is do
 - [ ] **AI agreement legal review.** After review, remove `STATUS: DRAFT` from both agreement assets and fill in
       the provider, contact and governing-law placeholders (see CLAUDE.md, Consent).
 
-## Requirements document (`docs/요구사항_정의서.docx`)
-- [ ] **PER-04 / PER-05 targets.** Measure AI summary (2–3 memos) and schedule extraction times on the Galaxy S23
-      (GPU) and replace the "OO초" placeholders.
-
 ## Exhibition panel (`docs/05_캡스톤디자인_전시회_판넬_ThoughtWeave.pptx`)
 Built from `docs/05_캡스톤디자인_전시회_판넬.pptx` (2026-11-18). Screens are Korean emulator captures of sample
 memos and schedules seeded into the database; diagrams are PowerPoint shapes.
-- [ ] **AI times.** Add the Galaxy S23 summary and extraction times (PER-04/05) once measured.
+- [ ] **AI times.** Add the PER-04/05 targets and measurements (CLAUDE.md, Inference; requirements document).
 - [ ] **Keep in sync.** Retake the S01–S04 captures after the UI rework or dark mode, and update the test count
       (224 on 2026-11-18) and the benchmark figure (188/209 facts) if they change.
 

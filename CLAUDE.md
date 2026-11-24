@@ -148,6 +148,13 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
   1 is a time a later memo replaced (ko-8, "7시" → "8시"), which rules cannot tell from a drop (accepted, user
   decision 2026-11-18: the warning says "missing or changed"). S02-C shows it since 2026-11-18. The same work fixed the shared date reader: "January 20-22" / "12월 1일~7일" now read the end date (schedule
   extraction gets the range), and "2시간" is no longer a time.
+- Device timings (2026-11-25, Galaxy S23 Ultra SM-S918N, Android 15, `RealModelTimingCheck` through the app's
+  repositories, both runs on GPU): warm summary of 2 memos median 1.8 s (max 2.8 s), 3 memos median 3.8 s (max 5.6 s,
+  rising about 20% over three rounds as the phone warmed), first text after about 0.5–1.1 s; warm extraction 0.3–0.6 s.
+  Cold (first AI request after launch, engine load included): 7.6–8.6 s. The very first use after install takes about
+  15 s, because LiteRT-LM builds a GPU program cache (`…mldrift_program_cache.bin`, 23 MB) in the app's cache folder;
+  clearing the cache brings that back. Targets in the requirements document (user decision, 2026-11-25): PER-04 a
+  2–3 memo summary within 6 s, PER-05 extraction within 1 s, and the first AI request after launch within 10 s.
 - Gemma 3 1B answered Korean memos in English when told to use "the same language", so Korean memos get a Korean
   prompt. Its context is 4,096 tokens; over-long input fails with a "too long" error, reported to the user.
 
