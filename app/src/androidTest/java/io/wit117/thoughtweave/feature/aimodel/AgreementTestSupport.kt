@@ -7,6 +7,7 @@ import io.wit117.thoughtweave.data.ai.model.GEMMA_MODEL_SPEC
 import io.wit117.thoughtweave.data.ai.model.InstallMarkerStore
 import io.wit117.thoughtweave.data.ai.engine.InferenceEngine
 import io.wit117.thoughtweave.data.ai.engine.InferencePrompt
+import io.wit117.thoughtweave.data.di.DeviceCompatibilityTestOverride
 import io.wit117.thoughtweave.data.di.InferenceEngineTestOverride
 import io.wit117.thoughtweave.data.di.modelMarkerFile
 import io.wit117.thoughtweave.data.repository.AGREEMENT_PREFS_NAME
@@ -30,10 +31,13 @@ class ModelStateRule(
 
     override fun after() {
         InferenceEngineTestOverride.engine = null
+        DeviceCompatibilityTestOverride.supported = null
     }
 
     override fun before() {
         InferenceEngineTestOverride.engine = engine
+        // The emulator has 2 GB of RAM, below the AI minimum; these tests cover the flows, not the device check.
+        DeviceCompatibilityTestOverride.supported = true
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val model = importedModelFile(context, GEMMA_MODEL_SPEC)
         val marker = InstallMarkerStore(modelMarkerFile(context))

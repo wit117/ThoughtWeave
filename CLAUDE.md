@@ -155,6 +155,9 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
   15 s, because LiteRT-LM builds a GPU program cache (`…mldrift_program_cache.bin`, 23 MB) in the app's cache folder;
   clearing the cache brings that back. Targets in the requirements document (user decision, 2026-11-25): PER-04 a
   2–3 memo summary within 6 s, PER-05 extraction within 1 s, and the first AI request after launch within 10 s.
+  Memory on the same phone (Phase 6, `dumpsys meminfo` every 3 s during `RealModelTimingCheck`): 2.4 GB PSS while
+  the engine is loaded (1.58 GB of it GPU, `GL mtrack`; 0.29 GB native), flat across repeated requests; about 60 s
+  after the last request it drops to 0.3 GB with no GPU memory left (PER-07 verified), and the next request reloads.
 - Gemma 3 1B answered Korean memos in English when told to use "the same language", so Korean memos get a Korean
   prompt. Its context is 4,096 tokens; over-long input fails with a "too long" error, reported to the user.
 
@@ -184,7 +187,14 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
 - The recognition language is the AI input language when one is set, else the app language
   (`ResolveAiLanguageUseCase("")`), as `AppLanguage.speechTag` ("ko-KR", "en-US").
 - `RECORD_AUDIO` is requested on the first mic tap, after an in-app explanation. There is no separate consent and
-  still no `INTERNET` permission. The manifest declares `<queries>` for `android.speech.RecognitionService`.
+  still no `INTERNET` permission. No `<queries>` entry: on the Galaxy S23 Ultra (Android 15) the mic check, recognition
+  and S06 language states all worked without it (2026-11-25), so it was removed.
+- Real-device check (Phase 6, 2026-11-25, Galaxy S23 Ultra): Korean and English dictation each inserted three
+  sentences spoken with 3 s pauses exactly once, in order, and the session ended by itself after the silence. The
+  recognizer formats numbers ("3시", "5만 원", "3:00 p.m.", "$50"), which the S02-C fact check reads; Korean had
+  recognition errors ("사랑니 상담" → "사랑리 3당") and no punctuation. S06 showed 한국어 installed and English
+  downloadable; after the download English showed installed. The download finished within seconds, so the
+  downloading and progress states were not seen.
 - No new dependency. Icons `ic_mic` and `ic_stop` are Material Symbols, like the others.
 
 ## Consent (POP04)
@@ -210,12 +220,19 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
 - `ai-delivery` 0.2.0-beta01 API and status codes verified with `javap` (2026-11-09). Failed Play tasks are
   read as `ApiException.statusCode`. `:gemma_pack` uses AGP's `com.android.ai-pack` plugin.
 - `asset-delivery` (required by `ai-delivery`) brings WorkManager and its `WAKE_LOCK`, `ACCESS_NETWORK_STATE`
-  and `RECEIVE_BOOT_COMPLETED` permissions. The release manifest still has no `INTERNET` permission.
+  and `RECEIVE_BOOT_COMPLETED` permissions, plus `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_DATA_SYNC` for its
+  download service (`asset-delivery:2.3.0`, per the release manifest-merger report, 2026-11-25). The release manifest
+  still has no `INTERNET` permission.
 - The model is gitignored and copied to `gemma_pack/src/main/assets` by hand. `bundleRelease` fails if it is
   missing. The download may start before consent; consent gates AI use only.
 - Debug builds: model import via the system file picker (`src/debug` only).
 - Integrity: full SHA-256 on first install or import; size + marker on later launches; full hash only
   after an engine init failure.
+- Device requirement (user decision, 2026-11-25: phones sold with 6 GB of RAM or more): 64-bit, not a low-RAM device,
+  and `ActivityManager.MemoryInfo.totalMem` ≥ 5 GiB (`MIN_TOTAL_RAM_BYTES`). Android reports about 90% of the installed
+  RAM, so a 6 GB phone reports about 5.4 GiB. Below it the AI shows as unsupported and the model is not downloaded.
+  The emulator AVD has 2 GB, so instrumented tests set the debug-only `DeviceCompatibilityTestOverride` (in
+  `ModelStateRule`); manual AI checks on the emulator need its RAM raised to 6 GB.
 - Only `GemmaInferenceEngine` imports LiteRT-LM. Only the delivery layer imports Play APIs.
   The UI sees `AiAvailability` only.
 - Gemma notices: "Gemma is provided under and subject to the Gemma Terms of Use found at
@@ -225,10 +242,39 @@ Repository: https://github.com/Edge903/ThoughtWeave (`origin`, branch `main`).
 
 ## Testing
 - Emulator: AVD `Medium_Phone_API_36.1` (x86_64, CPU inference only).
-- Real device: the user's Galaxy S23 (SM8550) for GPU, performance and memory measurements.
-  Its data partition is 8G, because the real model does not fit in the default 6G.
+- Real device: the user's Galaxy S23 Ultra (SM-S918N, SM8550, Android 15, Korean locale, dark mode) for GPU,
+  performance, memory and dictation checks. It has a Secure Folder (user 150), so `adb install` and `am instrument`
+  take `--user 0`. Debug import works from the file picker's Downloads.
+- Phase 6 device flow (2026-11-25, debug build): import (SHA-256 verified in under 25 s), POP04, a three-memo English
+  synthesis on GPU (S02-C flagged the dropped "7:40 am"; "three nights", "two adapters" and "Jan 12" matched their
+  sources), save as "무제", and extraction in S02-B → POP03 ("Busan Trip", 2027-01-09 07:40) → S04. Gemma answered
+  the memo's open question ("A car rental seems appropriate"); nothing checks for that.
+- Phase 6 on the phone (2026-11-25): all 52 instrumented tests pass (the three real-model checks excluded), run with
+  `am instrument --user 0`. They replace the imported model with `ModelStateRule`'s sparse file and leave test memos,
+  so clear the app data and re-import afterwards. Offline (airplane mode, Wi-Fi off): a two-memo synthesis on GPU and
+  an extraction ("Rent", 2026-12-01) both work; the summary text was identical to the emulator's CPU output.
+- Dark theme (Phase 6, 2026-11-25, on the phone's system dark mode with dynamic color): S01, S02-B, S02-C with its
+  warning, S03 with selection, POP01, S04, POP02/POP03, S06, S05 with the Gemma terms and the agreement, the overflow
+  menu and dialogs all read correctly. Colors come only from `MaterialTheme` (`Color.kt` light and dark palettes);
+  no screen hardcodes one, and `values-night/themes.xml` gives the window a dark background.
+- Accessibility (Phase 6, 2026-11-25): every tappable element on S01, S01 search, S02-B, S03, S04, POP02, the overflow
+  menu, S05 and S06 has a spoken label and is at least 48 dp, checked from `uiautomator` dumps on the phone. The
+  one finding, POP02/POP03's unlabeled all-day switch, is fixed: the whole row is `toggleable(role = Role.Switch)`
+  with the `Switch` inside it passive, so TalkBack reads "종일, switch" (`ScheduleFlowTest.allDaySwitchIsLabelled`).
+  Decorative icons next to their own text (FAB, empty state, bottom bar, S03 check) keep `contentDescription = null`.
+  At the largest font size (`font_scale` 2.0 on the phone, then restored to 1.0) S01, S03, POP02, dialogs, S06 and
+  S05 stay readable with no overlap; memo previews end in an ellipsis, and S03's fixed-height cards show the title and
+  two lines. Korean pass: all strings translated and phrase line breaks hold. The AI feature has four names ("AI 통합"
+  tab and S03 title, "AI 메모 합성" FAB whose English is "Summarize with AI", "AI 요약" in S02-C); left as is,
+  since the requirements document, screen design deck and exhibition panel use them too.
 - Local AI-pack testing: AGP's cached bundletool 1.18.3 with `--local-testing` (approved). The cached jar is not
-  runnable: use main class `com.android.tools.build.bundletool.BundleToolMain` on JDK 11+, with AGP's resolved
-  classpath from `buildEnvironment`, `--aapt2` from the SDK, and the debug keystore. Build with
-  `bundleRelease -PallowDraftLegal=true`.
+  runnable: use main class `com.android.tools.build.bundletool.BundleToolMain` on JDK 11+, `--aapt2` from the SDK,
+  and the debug keystore. Build with `bundleRelease -PallowDraftLegal=true`. Classpath (2026-11-25): resolving
+  bundletool offline in a separate Gradle project fails, so take the jar's manifest `Class-Path` and use the newest
+  cached jar of each artifact, plus `jakarta.inject-api` (the cached Dagger is 2.60.1) and `kotlin-stdlib`.
+- Release test on the phone (Phase 6, 2026-11-25): `build-apks --local-testing --connected-device` and `install-apks`
+  (608 MB) after uninstalling the debug app with `--user 0`. The release build is not debuggable, has no `INTERNET`
+  permission, received the AI pack through Play Core's local testing (`FakeAssetPackService: notifyModuleCompleted`),
+  verified it with no debug import, and ran a synthesis on GPU after POP04. The "package not debuggable" warning from
+  `install-apks` is expected for release.
 - Play fast-follow and Wi-Fi consent flows: Play internal testing track (deferred until Console access).

@@ -4,13 +4,6 @@
     <!-- Voice dictation (S02-A/B). Recognition is on-device only; there is still no INTERNET permission. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- Package visibility (API 30+) for the system speech recognition service. -->
-    <queries>
-        <intent>
-            <action android:name="android.speech.RecognitionService" />
-        </intent>
-    </queries>
-
     <application
         android:name=".ThoughtWeaveApplication"
         android:allowBackup="true"

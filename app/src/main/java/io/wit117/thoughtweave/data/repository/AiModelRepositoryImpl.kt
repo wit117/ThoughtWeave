@@ -4,7 +4,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import io.wit117.thoughtweave.data.ai.delivery.ModelDelivery
 import io.wit117.thoughtweave.data.ai.delivery.ModelDeliveryState
-import io.wit117.thoughtweave.data.ai.model.DeviceCompatibilityChecker
+import io.wit117.thoughtweave.data.ai.model.DeviceCompatibility
 import io.wit117.thoughtweave.data.ai.model.ModelFileProvider
 import io.wit117.thoughtweave.data.ai.model.ModelInstaller
 import io.wit117.thoughtweave.data.di.ApplicationScope
@@ -35,7 +35,7 @@ class AiModelRepositoryImpl internal constructor(
     constructor(
         delivery: ModelDelivery,
         installer: ModelInstaller,
-        compatibility: DeviceCompatibilityChecker,
+        compatibility: DeviceCompatibility,
         @ApplicationScope scope: CoroutineScope,
     ) : this(delivery, installer, scope, compatibility.isSupported())
 

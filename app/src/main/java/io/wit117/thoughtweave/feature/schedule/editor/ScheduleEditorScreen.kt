@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -221,13 +223,16 @@ private fun ScheduleForm(
             label = { Text(stringResource(R.string.schedule_description_label)) },
             minLines = 3,
         )
+        // The whole row is the switch, so TalkBack reads "종일, switch, on" and the label is a touch target too.
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(value = fields.isAllDay, role = Role.Switch, onValueChange = viewModel::onAllDayChange),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(stringResource(R.string.schedule_all_day))
-            Switch(checked = fields.isAllDay, onCheckedChange = viewModel::onAllDayChange)
+            Switch(checked = fields.isAllDay, onCheckedChange = null)
         }
         DateTimeField(
             label = stringResource(R.string.schedule_start_label),

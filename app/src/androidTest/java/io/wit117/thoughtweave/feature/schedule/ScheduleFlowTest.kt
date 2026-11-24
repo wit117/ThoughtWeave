@@ -2,9 +2,12 @@ package io.wit117.thoughtweave.feature.schedule
 
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
@@ -53,6 +56,16 @@ class ScheduleFlowTest {
         waitFor(hasText(str(R.string.action_ok)) and hasClickAction())
         click(R.string.action_ok)
         waitUntilGone(hasText(str(R.string.action_ok)) and hasClickAction())
+    }
+
+    /** The all-day switch carries its label, so TalkBack names it, and tapping the label toggles it. */
+    @Test
+    fun allDaySwitchIsLabelled() {
+        openNewSchedule("schedule-${UUID.randomUUID()}")
+        val allDay = rule.onNode(hasText(str(R.string.schedule_all_day)) and isToggleable())
+        allDay.assertIsOff()
+        allDay.performClick()
+        allDay.assertIsOn()
     }
 
     @Test

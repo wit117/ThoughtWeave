@@ -13,18 +13,9 @@ memos and schedules seeded into the database; diagrams are PowerPoint shapes.
 - [ ] **Keep in sync.** Retake the S01–S04 captures after the UI rework or dark mode, and update the test count
       (224 on 2026-11-18) and the benchmark figure (188/209 facts) if they change.
 
-## Voice dictation (V1 and V2 done 2026-11-18; V3 dropped)
-- [ ] **Real-device check.** Dictate in Korean and English on the Galaxy S23. The emulator's on-device recognizer
-      runs but hears no voice, so the flows were tested with a scripted recognizer. Check on the S23: a long dictation
-      with pauses (segmented session, no piece inserted twice), the 10 s silence end, the S06 language states and a
-      download. Check also that recognition works without the `<queries>` entry; remove it if it is not needed.
+## Voice dictation (V1 and V2 done 2026-11-18, checked on the S23 Ultra 2026-11-25; V3 dropped)
 - [ ] **Microphone in the legal texts.** Mention microphone use in the agreement at the legal review
       (bump `CURRENT_AGREEMENT_VERSION`), and in the Play Data safety form (audio processed on device, not collected).
 
 ## UI (added 2026-11-18)
 - [ ] **UI rework.** Rework the screens' look and layout (scope to be decided with the user before starting).
-- [ ] **Dark mode.** Support the system dark theme on every screen, including the S05 legal texts and dialogs.
-
-## Phase 6 (on hold since 2026-11-11)
-- [ ] **Start Phase 6** when the hold is lifted: Galaxy S23 GPU and performance measurements, full flow tests,
-      offline, themes, accessibility, Korean pass.
