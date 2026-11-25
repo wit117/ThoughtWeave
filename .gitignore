@@ -25,3 +25,7 @@ local.properties
 /tools/summary-bench/.venv/
 /tools/summary-bench/.cache/
 __pycache__/
+
+# Exhibition panel and the team photo stay local (user decision, 2026-11-25); the empty template is tracked
+/docs/05_캡스톤디자인_전시회_판넬_ThoughtWeave.pptx
+/docs/images/20261125_103559.jpg
